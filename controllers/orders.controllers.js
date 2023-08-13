@@ -251,6 +251,33 @@ const getOrderforShipperReceive = async(req, res) => {
     res.status(500).json({ message: "Đã có lỗi xảy ra!" });
   }
 };
+
+const getDetailforShipper = async(req, res) =>{
+  const {id_order} = req.params
+  try {
+    const shipper = await Order.sequelize.query(
+      "SELECT S.* FROM shippers as S, accounts as A WHERE A.username = :username AND S.id_account = A.id_account",
+      {
+        replacements: { username: `${req.username}` },
+        type: QueryTypes.SELECT,
+        raw: true,
+      }
+    );
+
+    const orderList = await Order.sequelize.query(
+      "SELECT (SELECT name FROM shippers WHERE id_shipper = O.id_shipper) as name_shipper, O.id_order, O.delivery_fee, O.phone_receive, O.item_fee, O.total, O.address_receive,O.address_delivery,O.status, DATE_FORMAT(O.time_receive, '%d/%m/%Y %H:%i') as time_confirm, DATE_FORMAT(O.time_delivery, '%d/%m/%Y %H:%i') as time_shipper_receive, DATE_FORMAT(O.time_delivered, '%d/%m/%Y %H:%i') as time_shipper_delivered, DATE_FORMAT(O.time_create, '%d/%m/%Y %H:%i') as time_create FROM orders as O WHERE O.id_shipper = :id_shipper AND O.id_order = :id_order ORDER BY O.status DESC",
+      {
+        replacements: { id_shipper: shipper[0].id_shipper,id_order },
+        type: QueryTypes.SELECT,
+        raw: true,
+      }
+    );
+    res.status(200).json({ orderList });
+  } catch (error) {
+    res.status(500).json({ message: "Đã có lỗi xảy ra!" });
+  }
+}
+
 const getOrderforShipperDelivery = async(req, res) => {
   const {id_order} = req.query
   try {
@@ -638,7 +665,8 @@ module.exports ={
     getOrderCustomer,
     getOrderforShipperReceive,
     getOrderforShipperDelivery,
-    cancelOrderforUser
+    cancelOrderforUser,
+    getDetailforShipper
 }
 
 /* 

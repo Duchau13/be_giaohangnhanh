@@ -4,7 +4,7 @@ const { QueryTypes } = require("sequelize");
 const getAllshipper = async(req,res) => {
     try {
         const orderList = await Order.sequelize.query(
-          "SELECT A.area, A.route, O.id_shipper, O.name, O.phone FROM shippers as O, transport_areas as A",
+          "SELECT A.area, A.route, O.id_shipper, O.name, O.phone FROM shippers as O, transport_areas as A where O.id_shipper = A.id_shipper",
           {
             replacements: {},
             type: QueryTypes.SELECT,
