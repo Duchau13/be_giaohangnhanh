@@ -9,12 +9,12 @@ module.exports = (sequelize, DataTypes) => {
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
-    static associate({Account}) {
-      this.hasOne(Account, { foreignKey: "id_role" });
+    static associate({Shipper}) {
+      this.belongsTo(Shipper, { foreignKey: "id_shipper" });
     }
   }
   Transport_area.init({
-    id_role: {
+    id_shipper: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,

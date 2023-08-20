@@ -1,4 +1,4 @@
-const {Order,Type,Account,Customer} = require("../models");
+const {Order,Type,Account,Customer,Order_status} = require("../models");
 const { QueryTypes } = require("sequelize");
 
 
@@ -12,7 +12,6 @@ const createOrder = async (req, res) => {
             id_type
         }
     });
-    console.log(shipping.price);
     let random = getDistanceFromLatLonInKm(
         from_latitude,
         from_longitude,
@@ -22,19 +21,18 @@ const createOrder = async (req, res) => {
     if (random < 2) {
         random = random * 5;
       } else if (random >= 2 && random < 5) {
-        random = shipping.price * 5 + 5000;
+        random = shipping.price * 10 + 5000;
       } else if (random >= 5 && random < 10) {
-        random = shipping.price * 5 + 10000;
+        random = shipping.price * 8 + 10000;
       } else {
-        random = shipping.price * 4;
+        random = shipping.price * 7;
     }
     random = Math.ceil(random / 1000) * 1000;
     // console.log(random);
     const total  = item_fee + random
     console.log( id_customer, id_type,item_fee,phone_receive,address_receive,address_delivery,weight,description,from_latitude,from_longitude,to_latitude,to_longitude)
     try {
-        console.log("lỗi ở đây")
-        await Order.create({
+        const newOrder = await Order.create({
         id_customer,
         time_create:date,
         id_type,
@@ -47,6 +45,10 @@ const createOrder = async (req, res) => {
         delivery_fee: random,
         total: total,
         status: 0,
+      })
+      console.log(newOrder.id_order)
+      const NewOrderstatus = await Order_status.create({
+        id_order: newOrder.id_order
       })
       res.status(201).json({ message: "Tạo mới sản phẩm thành công!" });
     } catch (error) {
@@ -339,13 +341,20 @@ const confirmOrder = async (req, res) => {
         id_order,
       },
     });
+    console.log(order);
     if (order.status == 0) {
-      // const itemListInOrder = await Order.findAll({
-      //   where: {
-      //     id_order,
-      //   },
-      // });
+      const order_status = await Order_status.findOne({
+        where: {
+          id_order,
+        },
+      });
+      console.log(order_status);
+      const date = new Date();
+      date.setHours(date.getHours() + 7);
+      order_status.time_confirm = date;
       order.status = 1;
+      console.log(date)
+      await order_status.save()
       await order.save();
       res.status(201).json({ message: "Xác nhận đơn hàng!" });
     } else {
@@ -418,14 +427,24 @@ const receiveOrder = async (req, res) => {
         id_order,
       },
     });
+    const order_status = await Order_status.findOne({
+      where: {
+        id_order,
+      },
+    });
     if (order.status == 1) {
       // const itemListInOrder = await Order.findAll({
       //   where: {
       //     id_order,
       //   },
       // });
+      const date = new Date()
+      date.setHours = date.getHours() + 7;
+      order_status.time_receive = date;
+      order_status.id_shipper_receive = id_shipper
       order.status = 3;
       order.id_shipper = id_shipper;
+      await order_status.save()
       await order.save();
       res.status(201).json({ message: "Phân công nhận hàng thành công!" });
     } else {
@@ -445,14 +464,23 @@ const shipperReceived = async (req, res) => {
         id_order,
       },
     });
+    const order_status = await Order_status.findOne({
+      where: {
+        id_order,
+      },
+    });
     if (order.status == 3) {
       // const itemListInOrder = await Order.findAll({
       //   where: {
       //     id_order,
       //   },
       // });
+      const date = new Date()
+      date.setHours = date.getHours() + 7;
+      order_status.time_received = date;
       order.status = 4;
       await order.save();
+      await order_status.save()
       res.status(201).json({ message: "Nhân viên giao hàng đã nhận hàng từ cửa hàng!" });
     } else {
       res.status(400)
@@ -471,14 +499,24 @@ const wareHoused_order = async (req, res) => {
         id_order,
       },
     });
+    const order_status = await Order_status.findOne({
+      where: {
+        id_order,
+      },
+    });
     if (order.status == 4) {
       // const itemListInOrder = await Order.findAll({
       //   where: {
       //     id_order,
       //   },
       // });
+      const date = new Date()
+      date.setHours = date.getHours() + 7;
+      order_status.time_warehouse = date;
       order.status = 5;
+      order.id_shipper = null;
       await order.save();
+      await order_status.save()
       res.status(201).json({ message: "Đơn hàng được giao về kho hoàn thành!" });
     } else {
       res.status(400)
@@ -497,15 +535,22 @@ const delivery_Order = async (req, res) => {
         id_order,
       },
     });
+    const order_status = await Order_status.findOne({
+      where: {
+        id_order,
+      },
+    });
     if (order.status == 5) {
       // const itemListInOrder = await Order.findAll({
       //   where: {
       //     id_order,
       //   },
       // });
-      order.status = 6;
+      order_status.id_shipper_delivery = id_shipper
       order.id_shipper = id_shipper;
+      order.status = 6;
       await order.save();
+      await order_status.save()
       res.status(201).json({ message: "Phân công giao hàng thành công!" });
     } else {
       res.status(400)
@@ -524,14 +569,23 @@ const received_wareHouse = async (req, res) => {
         id_order,
       },
     });
+    const order_status = await Order_status.findOne({
+      where: {
+        id_order,
+      },
+    });
     if (order.status == 6) {
       // const itemListInOrder = await Order.findAll({
       //   where: {
       //     id_order,
       //   },
       // });
+      const date = new Date()
+      date.setHours = date.getHours() + 7;
+      order_status.time_delivery = date;
       order.status = 7;
       await order.save();
+      await order_status.save()
       res.status(201).json({ message: "Đã nhận hàng từ kho đi giao!" });
     } else {
       res.status(400)
@@ -549,14 +603,24 @@ const finished_order = async (req, res) => {
         id_order,
       },
     });
+    const order_status = await Order_status.findOne({
+      where: {
+        id_order,
+      },
+    });
     if (order.status == 7) {
       // const itemListInOrder = await Order.findAll({
       //   where: {
       //     id_order,
       //   },
       // });
+      const date = new Date()
+      date.setHours = date.getHours() + 7;
+      order_status.time_delivered = date;
       order.status = 8;
+      order.id_shipper = null;
       await order.save();
+      await order_status.save()
       res.status(201).json({ message: "Hoàn thành đơn hàng!" });
     } else {
       res.status(400)
@@ -647,6 +711,22 @@ const delivery_CancelOrder = async (req, res) => {
   }
 };
 
+const getStatus_order = async(req, res) => {
+  const { id_order} = req.params;
+  try {
+    const orderList = await Order.sequelize.query(
+      "SELECT (SELECT status from orders where id_order = :id_order) as status, DATE_FORMAT(Os.time_confirm, '%d/%m/%Y %H:%i') as time_confirm, DATE_FORMAT(Os.time_create, '%d/%m/%Y %H:%i') as time_create, DATE_FORMAT(Os.time_receive, '%d/%m/%Y %H:%i') as time_receive, DATE_FORMAT(Os.time_received, '%d/%m/%Y %H:%i') as time_received, DATE_FORMAT(Os.time_delivery, '%d/%m/%Y %H:%i') as time_delivery, DATE_FORMAT(Os.time_delivered, '%d/%m/%Y %H:%i') as time_delivered, DATE_FORMAT(Os.time_warehouse, '%d/%m/%Y %H:%i') as time_warehouse, Os.id_shipper_delivery, Os.id_shipper_receive   FROM order_statuses as Os  where Os.id_order = :id_order",
+      {
+        replacements: { id_order },
+        type: QueryTypes.SELECT,
+        raw: true,
+      }
+    );
+    res.status(200).json({ orderList });
+  } catch (error) {
+    res.status(500).json({ message: "Thao tác thất bại!" });
+  }
+}
 
 module.exports ={
     createOrder,
@@ -666,7 +746,8 @@ module.exports ={
     getOrderforShipperReceive,
     getOrderforShipperDelivery,
     cancelOrderforUser,
-    getDetailforShipper
+    getDetailforShipper,
+    getStatus_order
 }
 
 /* 

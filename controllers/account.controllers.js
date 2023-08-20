@@ -5,6 +5,7 @@ const {
     Account,
     Shipper,
     Customer,
+    Transport_area
 } = require("../models");
 
 
@@ -38,7 +39,7 @@ const createAccountForCustomer = async (req, res) => {
     }
 };
 const createAccountForShipper = async (req, res) => {
-    const { username, password, name, email, phone, address, description } = req.body;
+    const { username, password, name, email, phone, address,area,route } = req.body;
     try {
       //tạo ra một chuỗi ngẫu nhiên
       const salt = bcrypt.genSaltSync(10);
@@ -55,9 +56,20 @@ const createAccountForShipper = async (req, res) => {
           email,
           phone,
           address,
-          description
-       });
-        
+          description:""
+      });
+      const newArea = await Shipper.findOne({
+        where:{
+          id_account: newAccount.id_account,
+        }
+      });
+      // console.log(newArea.id_shipper);
+      await Transport_area.create({
+          id_shipper: newArea.id_shipper,
+          area,
+          route,
+      })
+      console.log(newArea);
       res.status(200).json({
         message: "Đăng ký thành công!",
       });
